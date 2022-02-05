@@ -19,7 +19,7 @@ services:
        - ./storage/docker_redmine-plugins:/usr/src/redmine/plugins
        - ./storage/docker_redmine-themes:/usr/src/redmine/public/themes
        - ./storage/docker_redmine-data:/usr/src/redmine/files
-       - ./redmine/log:/usr/src/redmine/log
+       - ./storage/docker_redmine-log:/usr/src/redmine/log
      depends_on:
        - postgres
      environment:
