@@ -1,6 +1,5 @@
 * Store the plugin in the Redmine plugin directory
-
---The sample docker-compose.yml plugin directory is `./redmine/plugins`
+    The sample docker-compose.yml plugin directory is `./redmine/plugins`
 
 * Enter the Redmine container and execute the following command
 ```
