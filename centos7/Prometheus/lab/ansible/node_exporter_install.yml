@@ -57,6 +57,7 @@
         After=network-online.target
 
         [Service]
+        Restart=always
         User=node_exporter
         Group=node_exporter
         Type=simple
