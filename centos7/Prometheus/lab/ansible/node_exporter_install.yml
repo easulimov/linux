@@ -60,7 +60,7 @@
         User=node_exporter
         Group=node_exporter
         Type=simple
-        EnvironmentFile=/etc/sysconfig/node_exporter
+        EnvironmentFile=/etc/sysconfig/node_exporter.conf
         ExecStart=/usr/local/bin/node_exporter $OPTIONS
         ExecReload=/bin/kill -HUP $MAINPID
         TimeoutStopSec=20s
