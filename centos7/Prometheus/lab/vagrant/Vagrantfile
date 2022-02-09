@@ -39,5 +39,6 @@ end
 $script = <<-SCRIPT
 yum install -y epel-release
 yum clean all && yum makecache
-yum install -y mc wget curl zip tree
+yum update
+yum install -y mc wget curl zip tree vim-enhanced
 SCRIPT
