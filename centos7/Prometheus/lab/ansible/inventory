@@ -1,0 +1,13 @@
+[under_monitoring]
+cent03 ansible_host=127.0.0.1 ansible_port=2201
+
+[monitoring_server]
+cent01 ansible_host=127.0.0.1 ansible_port=2222
+
+[grafana_server]
+cent02 ansible_host=127.0.0.1 ansible_port=2200
+
+[all_centos:children]
+under_monitoring
+monitoring_server
+grafana_server

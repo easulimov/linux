@@ -1,0 +1,85 @@
+---
+
+- hosts: under_monitoring
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9100 ports
+    firewalld:
+      port: 9100/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9100 ports
+
+  - name: Add the user 'node_exporter'
+    user:
+      name: node_exporter
+      shell: /bin/false
+      create_home: no
+
+  - name: Download node_exporter
+    unarchive:
+      src: https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Cp node_exporter to /usr/local/bin/
+    copy:
+      src: /tmp/node_exporter-1.3.1.linux-amd64/node_exporter
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: node_exporter
+      group: node_exporter
+      mode: 0755
+
+  - name: Remove directory node_exporter-1.3.1.linux-amd64
+    file:
+      path: /tmp/node_exporter-1.3.1.linux-amd64/node_exporter
+      state: absent
+
+  - name: Create config file for Node Exporter Service
+    copy:
+      dest: /etc/sysconfig/node_exporter.conf
+      content: |
+        OPTIONS=""
+
+
+  - name: Add unit /etc/systemd/system/node_exporter.service
+    copy:
+      content: |
+        [Unit]
+        Description=Node Exporter Service
+        Documentation=https://github.com/prometheus/node_exporter
+        After=network-online.target
+
+        [Service]
+        User=node_exporter
+        Group=node_exporter
+        Type=simple
+        EnvironmentFile=/etc/sysconfig/node_exporter
+        ExecStart=/usr/local/bin/node_exporter $OPTIONS
+        ExecReload=/bin/kill -HUP $MAINPID
+        TimeoutStopSec=20s
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/node_exporter.service
+    notify:
+      - Add unit /etc/systemd/system/node_exporter.service
+
+  handlers:
+    - name: Open 9100 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Add unit /etc/systemd/system/node_exporter.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: node_exporter
