@@ -1,0 +1,12 @@
+---
+
+- hosts: under_monitoring
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Disable SELinux
+    ansible.posix.selinux:
+      state: disabled
