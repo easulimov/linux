@@ -1,0 +1,95 @@
+---
+
+- hosts: under_monitoring
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9115 ports
+    firewalld:
+      port: 9115/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9115 ports
+
+  - name: Add the user 'blackbox_exporter'
+    user:
+      name: blackbox_exporter
+      shell: /bin/false
+      create_home: no
+
+  - name: Download blackbox_exporter
+    unarchive:
+      src: https://github.com/prometheus/blackbox_exporter/releases/download/v0.19.0/blackbox_exporter-0.19.0.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Cp blackbox_exporter to /usr/local/bin/
+    copy:
+      src: /tmp/blackbox_exporter-0.19.0.linux-amd64/blackbox_exporter
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: blackbox_exporter
+      group: blackbox_exporter
+      mode: 0755
+
+  - name: Add config /etc/blackbox_exporter/blackbox.yml
+    copy:
+      src: /tmp/blackbox_exporter-0.19.0.linux-amd64/blackbox.yml
+      dest: /etc/blackbox_exporter/
+      remote_src: yes
+      owner: blackbox_exporter
+      group: blackbox_exporter
+      mode: 0644
+
+  - name: Remove directory blackbox_exporter-0.19.0.linux-amd64
+    file:
+      path: /tmp/blackbox_exporter-0.19.0.linux-amd64/
+      state: absent
+
+  - name: Create config file for Blackbox Exporter Service
+    copy:
+      dest: /etc/sysconfig/blackbox_exporter
+      content: |
+        OPTIONS="--config.file=/etc/blackbox_exporter/blackbox.yml"
+
+
+  - name: Add unit /etc/systemd/system/blackbox_exporter.service
+    copy:
+      content: |
+        [Unit]
+        Description=Blackbox Exporter Service
+        Documentation=https://github.com/prometheus/blackbox_exporter
+        After=network-online.target
+
+        [Service]
+        Restart=always
+        User=blackbox_exporter
+        Group=blackbox_exporter
+        Type=simple
+        EnvironmentFile=/etc/sysconfig/blackbox_exporter
+        ExecStart=/usr/local/bin/blackbox_exporter $OPTIONS
+        ExecReload=/bin/kill -HUP $MAINPID
+        TimeoutStopSec=20s
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/blackbox_exporter.service
+    notify:
+      - Add unit /etc/systemd/system/blackbox_exporter.service
+
+  handlers:
+    - name: Open 9115 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Add unit /etc/systemd/system/blackbox_exporter.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: blackbox_exporter
