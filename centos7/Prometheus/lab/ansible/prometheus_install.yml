@@ -85,6 +85,14 @@
     notify:
       - Add unit /etc/systemd/system/prometheus.service
 
+  - name: Copy promtool bynary to /usr/local/bin/
+    copy:
+      src: /tmp/prometheus-2.33.3.linux-amd64/promtool
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: prometheus
+      group: prometheus
+      mode: 0755
 
   - name: Remove directory /tmp/prometheus-2.33.3.linux-amd64/
     file:
