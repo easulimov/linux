@@ -1,0 +1,105 @@
+---
+
+- hosts: monitoring_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9090 ports
+    firewalld:
+      port: 9090/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9090 ports
+
+  - name: Add the user 'prometheus'
+    user:
+      name: prometheus
+      shell: /bin/false
+      create_home: no
+
+  - name: Download Prometheus
+    unarchive:
+      src: https://github.com/prometheus/prometheus/releases/download/v2.33.3/prometheus-2.33.3.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Copy prometheus bynary to /usr/local/bin/
+    copy:
+      src: /tmp/prometheus-2.33.3.linux-amd64/prometheus
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+
+  - name: Create prometheus.yml config file
+    copy:
+      src: /tmp/prometheus-2.33.3.linux-amd64/prometheus.yml
+      dest: /etc/prometheus/
+      remote_src: yes
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+
+  - name: Create /var/lib/prometheus directory for Prometheus DB
+    ansible.builtin.file:
+      path: /var/lib/prometheus
+      state: directory
+      recurse: yes
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+
+  - name: Create config file for Prometheus Service
+    copy:
+      dest: /etc/sysconfig/prometheus.conf
+      content: |
+        OPTIONS="--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/"
+
+
+  - name: Add unit /etc/systemd/system/prometheus.service
+    copy:
+      content: |
+        [Unit]
+        Description=Prometheus Server
+        Documentation=https://github.com/prometheus/prometheus
+        After=network-online.target
+
+        [Service]
+        Restart=always
+        User=prometheus
+        Group=prometheus
+        Type=simple
+        EnvironmentFile=/etc/sysconfig/prometheus.conf
+        ExecStart=/usr/local/bin/prometheus $OPTIONS
+        ExecReload=/bin/kill -HUP $MAINPID
+        TimeoutStopSec=20s
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/prometheus.service
+    notify:
+      - Add unit /etc/systemd/system/prometheus.service
+
+
+  - name: Remove directory /tmp/prometheus-2.33.3.linux-amd64/
+    file:
+      path: /tmp/prometheus-2.33.3.linux-amd64/
+      state: absent
+
+  handlers:
+    - name: Open 9090 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Add unit /etc/systemd/system/prometheus.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: prometheus
