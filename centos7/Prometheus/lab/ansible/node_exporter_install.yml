@@ -1,6 +1,6 @@
 ---
 
-- hosts: under_monitoring
+- hosts: all_centos
   remote_user: vagrant
   become: yes
   become_user: root

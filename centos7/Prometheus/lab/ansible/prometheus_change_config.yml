@@ -1,0 +1,48 @@
+---
+
+- hosts: monitoring_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Create /etc/prometheus/sd directory for service discovery static configs
+    ansible.builtin.file:
+      path: /etc/prometheus/sd
+      state: directory
+      recurse: yes
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+
+  - name: Copy prometheus.yml to /etc/prometheus/
+    copy:
+      src: ../etc/prometheus/prometheus.yml
+      dest: /etc/prometheus/
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+    notify:
+      - Restart /etc/systemd/system/prometheus.service
+
+  - name: Create /etc/prometheus/sd/node_exporter.yml
+    copy:
+      dest: /etc/prometheus/sd/node_exporter.yml
+      content: |
+        - targets:
+          - localhost:9100
+          - 192.168.56.102:9100
+          - 192.168.56.103:9100
+          labels:
+            sd: file
+    notify:
+      - Restart /etc/systemd/system/prometheus.service
+
+  handlers:
+    - name: Restart /etc/systemd/system/prometheus.service
+      systemd:
+        enabled: true
+        state: restarted
+        name: prometheus
+
