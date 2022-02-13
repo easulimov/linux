@@ -8,6 +8,7 @@ Vagrant.configure(2) do |config|
   config.vm.define "cent01" do |cent01|
     cent01.vm.box = "centos/7"
     cent01.vm.network "private_network", ip: "192.168.56.101"
+    cent01.vm.network "forwarded_port", guest: 9090, host: 9090
     cent01.vm.provider "virtualbox" do |vb|
       vb.name = "centvm01"
       vb.gui = false
