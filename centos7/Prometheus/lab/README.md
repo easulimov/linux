@@ -1,1 +1,1 @@
-### Test enviroment with 3 VMs based on centos7
+### Test enviroment with 5 VMs based on centos7
