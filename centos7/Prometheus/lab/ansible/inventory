@@ -7,7 +7,15 @@ cent01 ansible_host=127.0.0.1 ansible_port=2222
 [grafana_server]
 cent02 ansible_host=127.0.0.1 ansible_port=2200
 
+[pushgateway_server]
+cent04 ansible_host=127.0.0.1 ansible_port=2202
+
+[alertmanager_server]
+cent05 ansible_host=127.0.0.1 ansible_port=2203
+
 [all_centos:children]
 under_monitoring
 monitoring_server
+pushgateway_server
+alertmanager_server
 grafana_server

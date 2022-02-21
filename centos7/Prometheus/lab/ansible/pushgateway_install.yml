@@ -1,0 +1,87 @@
+---
+
+- hosts: pushgateway_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9091 ports
+    firewalld:
+      port: 9091/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9091 ports
+
+  - name: Add the user 'pushgateway'
+    user:
+      name: pushgateway
+      comment: "Pushgateway server user"
+      shell: /bin/false
+      create_home: no
+
+  - name: Download pushgateway
+    unarchive:
+      src: https://github.com/prometheus/pushgateway/releases/download/v1.4.2/pushgateway-1.4.2.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Cp node_exporter to /usr/local/bin/
+    copy:
+      src: /tmp/pushgateway-1.4.2.linux-amd64/pushgateway
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: pushgateway
+      group: pushgateway
+      mode: 0755
+
+  - name: Remove directory pushgateway-1.4.2.linux-amd64
+    file:
+      path: /tmp/pushgateway-1.4.2.linux-amd64/
+      state: absent
+
+  - name: Create config file for Node Exporter Service
+    copy:
+      dest: /etc/sysconfig/pushgateway.conf
+      content: |
+        OPTIONS="--web.listen-address=:9091 --web.telemetry-path=/metrics --persistence.file=/tmp/metric.store --persistence.interval=5m --log.level=info --log.format=json"
+
+
+  - name: Add unit /etc/systemd/system/pushgateway.service
+    copy:
+      content: |
+        [Unit]
+        Description=Prometheus Pushgateway
+        Documentation=https://github.com/prometheus/pushgateway
+        After=network-online.target
+
+        [Service]
+        Restart=always
+        User=pushgateway
+        Group=pushgateway
+        Type=simple
+        EnvironmentFile=/etc/sysconfig/pushgateway.conf
+        ExecStart=/usr/local/bin/pushgateway $OPTIONS
+        ExecReload=/bin/kill -HUP $MAINPID
+        TimeoutStopSec=20s
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/pushgateway.service
+    notify:
+      - Add unit /etc/systemd/system/pushgateway.service
+
+  handlers:
+    - name: Open 9091 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Add unit /etc/systemd/system/pushgateway.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: pushgateway
