@@ -1,0 +1,59 @@
+---
+
+- hosts: grafana_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 3000 ports
+    firewalld:
+      port: 3000/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 3000 ports
+
+  - name: Add the user 'alertmanager'
+    user:
+      name: alertmanager
+      comment: "Alertmanager server user"
+      shell: /bin/false
+      create_home: no
+
+  - name: Create /etc/yum.repos.d/grafana.repo
+    copy:
+      dest: /etc/yum.repos.d/grafana.repo
+      content: |
+        [grafana]
+        name=grafana
+        baseurl=https://packages.grafana.com/oss/rpm
+        repo_gpgcheck=1
+        enabled=1
+        gpgcheck=1
+        gpgkey=https://packages.grafana.com/gpg.key
+        sslverify=1
+        sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+
+  - name: Install Grafana
+    yum:
+      name:
+        - grafana
+      state: present
+    notify:
+      - Run a grafana-server unit
+
+
+  handlers:
+    - name: Open 3000 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Run a grafana-server unit
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: grafana-server
