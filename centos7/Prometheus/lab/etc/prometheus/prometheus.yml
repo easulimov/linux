@@ -43,3 +43,9 @@ scrape_configs:
       - files:
         - /etc/prometheus/sd/*.yml
         refresh_interval: 1m
+
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+    - targets:
+      - http://192.168.56.104:9091
