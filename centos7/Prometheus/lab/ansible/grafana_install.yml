@@ -15,13 +15,6 @@
     notify:
       - Open 3000 ports
 
-  - name: Add the user 'alertmanager'
-    user:
-      name: alertmanager
-      comment: "Alertmanager server user"
-      shell: /bin/false
-      create_home: no
-
   - name: Create /etc/yum.repos.d/grafana.repo
     copy:
       dest: /etc/yum.repos.d/grafana.repo
