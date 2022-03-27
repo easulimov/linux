@@ -42,7 +42,7 @@
       path: /tmp/pushgateway-1.4.2.linux-amd64/
       state: absent
 
-  - name: Create config file for Node Exporter Service
+  - name: Create config file for Pushgateway Service
     copy:
       dest: /etc/sysconfig/pushgateway.conf
       content: |

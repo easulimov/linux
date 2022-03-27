@@ -1,0 +1,114 @@
+---
+
+- hosts: alertmanager_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9093 ports
+    firewalld:
+      port: 9093/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9093 ports
+
+  - name: Add the user 'alertmanager'
+    user:
+      name: alertmanager
+      comment: "Alertmanager server user"
+      shell: /bin/false
+      create_home: no
+
+  - name: Download alertmanager binary
+    unarchive:
+      src: https://github.com/prometheus/alertmanager/releases/download/v0.24.0/alertmanager-0.24.0.linux-amd64.tar.gz
+      dest: /tmp
+      remote_src: yes
+
+  - name: Copy alermanager to /usr/local/bin/
+    copy:
+      src: /tmp/alertmanager-0.24.0.linux-amd64/alertmanager
+      dest: /usr/local/bin/
+      remote_src: yes
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+
+  - name: Create /etc/alertmanager directory
+    ansible.builtin.file:
+      path: /etc/alertmanager
+      state: directory
+      recurse: yes
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+
+  - name: Create alertmanager.yml config file
+    copy:
+      src: /tmp/alertmanager-0.24.0.linux-amd64/alertmanager.yml
+      dest: /etc/alertmanager/
+      remote_src: yes
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+
+  - name: Create /var/lib/alertmanager directory for alermanager's data
+    ansible.builtin.file:
+      path: /var/lib/alertmanager/
+      state: directory
+      recurse: yes
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+
+  - name: Create config file for Alertmanager Service
+    copy:
+      dest: /etc/sysconfig/alertmanager.conf
+      content: |
+        OPTIONS="--config.file=/etc/alertmanager/alertmanager.yml --storage.path=/var/lib/alertmanager/"
+
+
+  - name: Add unit /etc/systemd/system/alertmanager.service
+    copy:
+      content: |
+        [Unit]
+        Description=Prometheus Alertmanager
+        Documentation=https://github.com/alertmanager/alertmanager
+        After=network-online.target
+
+        [Service]
+        Restart=always
+        User=alertmanager
+        Group=alertmanager
+        Type=simple
+        EnvironmentFile=/etc/sysconfig/alertmanager.conf
+        ExecStart=/usr/local/bin/alertmanager $OPTIONS
+        ExecReload=/bin/kill -HUP $MAINPID
+        TimeoutStopSec=20s
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/alertmanager.service
+    notify:
+      - Add unit /etc/systemd/system/alertmanager.service
+
+  - name: Remove directory alertmanager-0.24.0.linux-amd64/
+    file:
+      path: /tmp/alertmanager-0.24.0.linux-amd64/
+      state: absent
+
+  handlers:
+    - name: Open 9093 ports
+      service:
+        name: firewalld
+        state: reloaded
+
+    - name: Add unit /etc/systemd/system/alertmanager.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: alertmanager
