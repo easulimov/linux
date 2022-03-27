@@ -41,6 +41,16 @@
     notify:
       - Restart /etc/systemd/system/prometheus.service
 
+  - name: Copy  rules_alert.yml /etc/prometheus/
+    copy:
+      src: ../etc/prometheus/rules_alert.yml
+      dest: /etc/prometheus/
+      owner: prometheus
+      group: prometheus
+      mode: 0755
+    notify:
+      - Restart /etc/systemd/system/prometheus.service
+
   handlers:
     - name: Restart /etc/systemd/system/prometheus.service
       systemd:
