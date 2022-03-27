@@ -28,7 +28,7 @@
       dest: /tmp
       remote_src: yes
 
-  - name: Cp node_exporter to /usr/local/bin/
+  - name: Copy pushgateway to /usr/local/bin/
     copy:
       src: /tmp/pushgateway-1.4.2.linux-amd64/pushgateway
       dest: /usr/local/bin/
