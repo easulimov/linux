@@ -37,7 +37,6 @@
     notify:
       - Run a grafana-server unit
 
-
   handlers:
     - name: Open 3000 ports
       service:
