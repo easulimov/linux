@@ -1,0 +1,94 @@
+---
+
+- hosts: alertmanager_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Add the user 'telegrambot'
+    user:
+      name: telegrambot
+      comment: "Telegrambot server user for alertmanager goals"
+      shell: /bin/false
+      create_home: no
+
+  - name: Download alertmanager binary
+    copy:
+      src: ../bin/prometheus_bot
+      dest: /usr/local/bin
+      owner: telegrambot
+      group: telegrambot
+      mode: 0755
+
+  - name: Create /etc/telegrambot directory
+    ansible.builtin.file:
+      path: /etc/telegrambot
+      state: directory
+      owner: telegrambot
+      group: telegrambot
+      mode: 0755
+
+  - name: Copy config.yaml to the folder /etc/telegrambot/
+    template:
+      src: ../etc/telegrambot/config.yaml.j2
+      dest: /etc/telegrambot/config.yaml
+      owner: telegrambot
+      group: telegrambot
+      mode: 0755
+
+  - name: Copy template.tmpl to the folder /etc/telegrambot/
+    copy:
+      src: ../etc/telegrambot/template.tmpl
+      dest: /etc/telegrambot/template.tmpl
+      owner: telegrambot
+      group: telegrambot
+      mode: 0755
+
+  - name: Copy alertmanager.yml to the folder /etc/alertmanager/
+    copy:
+      src: ../etc/alertmanager/alertmanager.yml
+      dest: /etc/alertmanager/alertmanager.yml
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+    notify:
+      - Restart alertmanager.service
+
+  - name: Add unit /etc/systemd/system/alertmanager.service
+    copy:
+      content: |
+        [Unit]
+        Description=Telegram Bot for Alertmanager
+        Documentation=https://github.com/cp38510/prometheus_alert_bot_for_telegram/blob/master/prometheus_bot.service
+
+        [Service]
+        Restart=always
+        User=telegrambot
+        Group=telegrambot
+        Type=simple
+        ExecStart=/usr/local/bin/prometheus_bot -c /etc/telegrambot/config.yaml -l 127.0.0.1:9087 -t /etc/telegrambot/template.tmpl
+        StandardOutput=null
+        StandardError=journal
+
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/telegrambot.service
+    notify:
+      - Restart telegrambot.service
+
+  handlers:
+    - name: Restart alertmanager.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: alertmanager
+
+    - name: Restart telegrambot.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: telegrambot
