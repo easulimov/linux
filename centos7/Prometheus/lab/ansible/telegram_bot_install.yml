@@ -1,0 +1,99 @@
+---
+
+- hosts: alertmanager_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Clone Telegram Bot source code from GitHub
+    ansible.builtin.git:
+      repo: 'https://github.com/inCaller/prometheus_bot.git'
+      dest: /tmp/prometheus_bot/
+      clone: yes
+      update: yes
+      force: yes
+
+  - name: Copy Dockerfile to the project folder /tmp/prometheus_bot/
+    copy:
+      src: ../docker/Dockerfile
+      dest: /tmp/prometheus_bot/
+
+  - name: Create /etc/telegrambot directory
+    ansible.builtin.file:
+      path: /etc/telegrambot
+      state: directory
+
+  - name: Copy config.yaml to the folder /etc/telegrambot/
+    template:
+      src: ../etc/telegrambot/config.yaml.j2
+      dest: /etc/telegrambot/config.yaml
+
+  - name: Copy template.tmpl to the folder /etc/telegrambot/
+    copy:
+      src: ../etc/telegrambot/template.tmpl
+      dest: /etc/telegrambot/template.tmpl
+
+  - name: Copy alertmanager.yml to the folder /etc/alertmanager/
+    copy:
+      src: ../etc/alertmanager/alertmanager.yml
+      dest: /etc/alertmanager/alertmanager.yml
+      owner: alertmanager
+      group: alertmanager
+      mode: 0755
+    notify:
+      - Restart alertmanager.service
+
+  - name: Create a symbolic link for python3
+    ansible.builtin.file:
+      src: /bin/python3
+      dest: /usr/bin/python
+      state: link
+
+  - name: Create a symbolic link for pip3
+    ansible.builtin.file:
+      src: /bin/pip3
+      dest: /usr/bin/pip
+      state: link
+
+  - name: Install Docker python package
+    pip:
+      name: docker
+
+  - name: Build "seadockerhub/prometheus-bot:0.0.1" image
+    community.docker.docker_image:
+      name: "seadockerhub/prometheus-bot:0.0.1"
+      build:
+        path: /tmp/prometheus_bot/
+      source: build
+
+  - name: Start a prometheus-bot container
+    docker_container:
+      name: prometheus-bot
+      image: "seadockerhub/prometheus-bot:0.0.1"
+      state: "started"
+      detach: yes
+      restart: yes
+      restart_policy: "on-failure"
+      network_mode: "bridge"
+      volumes:
+        - "/etc/telegrambot/:/etc/telegrambot/"
+        - "/etc/telegrambot/config.yaml:/config.yaml"
+      exposed_ports:
+        - "9087"
+      ports:
+        - "9087:9087"
+
+  - name: Remove /tmp/prometheus_bot/ directory
+    file:
+      path: /tmp/prometheus_bot/
+      state: absent
+
+  handlers:
+    - name: Restart alertmanager.service
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: alertmanager

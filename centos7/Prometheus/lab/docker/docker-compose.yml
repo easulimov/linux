@@ -1,0 +1,16 @@
+##### demo
+###  docker run -d -p 9087:9087 -v /etc/telegrambot/:/etc/telegrambot/ -v /etc/telegrambot/config.yaml:/config.yaml --name prometheus-bot --restart=always seadockerhub/prometheus-bot:0.0.1
+version: '3.3'
+
+services:
+  prometheus-bot:
+          #container_name: telegrambot
+    image: seadockerhub/prometheus-bot:0.0.1
+
+    volumes:
+      - ./telegrambot/:/etc/telegrambot/
+      - ./telegrambot/config.yaml:/config.yaml
+    ports:
+      - 9087:9087
+    restart: always
+

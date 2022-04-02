@@ -1,0 +1,73 @@
+---
+
+- hosts: alertmanager_server
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: Open 9087 ports
+    firewalld:
+      port: 9087/tcp
+      permanent: yes
+      state: enabled
+    notify:
+      - Open 9087 ports
+
+  - name: Clean yum cache
+    command: yum clean all
+
+  - name: Installing tools
+    yum:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+        - git
+        - curl
+        - yum-utils
+        - python3
+
+  - name: Add docker-ce.repo
+    command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+  - name: Fix docker-ce.repo settings
+    command: yum-config-manager --setopt="docker-ce-stable.baseurl=https://download.docker.com/linux/centos/7/x86_64/stable" --save
+
+  - name: Installing docker package
+    yum:
+      name: "{{ item }}"
+      state: latest
+      update_cache: yes
+    loop:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+
+
+  - name: Add the user 'vagrant' to 'docker' group
+    ansible.builtin.user:
+      name: vagrant
+      groups: docker
+      append: yes
+
+  - name: Download and install docker-compose
+    get_url:
+      url: 'https://github.com/docker/compose/releases/download/v2.4.0/docker-compose-linux-x86_64'
+      dest: /usr/local/bin
+      mode: '0755'
+
+  - name: Enable docker daemon
+    systemd:
+      name: docker
+      daemon-reload: true
+      state: restarted
+      enabled: yes
+
+  handlers:
+    - name: Open 9087 ports
+      service:
+        name: firewalld
+        state: reloaded
