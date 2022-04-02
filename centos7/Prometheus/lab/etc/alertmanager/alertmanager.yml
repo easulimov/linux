@@ -9,7 +9,7 @@ route:
 receivers:
 - name: 'web.hook'
   webhook_configs:
-  - url: 'http://127.0.0.1:9087/alert/-1001519303340'
+  - url: 'http://127.0.0.1:9087/alert/-766756093'
 inhibit_rules:
   - source_match:
       severity: 'critical'
