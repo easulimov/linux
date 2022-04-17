@@ -1,0 +1,50 @@
+Vagrant.configure(2) do |config|
+
+  # Use the same key for each machine
+  config.ssh.insert_key = false
+
+  config.vm.provision "shell", inline: $script
+
+  config.vm.define "nginx" do |nginx|
+    nginx.vm.box = "centos/7"
+    nginx.vm.network "private_network", ip: "192.168.56.20"
+    nginx.vm.network "forwarded_port", guest: 8080, host: 8080
+    nginx.vm.hostname = "nginx"
+    nginx.vm.provider "virtualbox" do |vb|
+      vb.name = "nginx"
+      vb.gui = false
+      vb.memory = "1024"
+    end
+  end
+  config.vm.define "psql" do |psql|
+    psql.vm.box = "centos/7"
+    psql.vm.network "private_network", ip: "192.168.56.21"
+    psql.vm.network "forwarded_port", guest: 5432, host: 5432
+    psql.vm.hostname = "psql"
+    psql.vm.provider "virtualbox" do |vb|
+      vb.name = "psql"
+      vb.gui = false
+      vb.memory = "1024"
+    end
+  end
+  config.vm.define "grafana" do |grafana|
+    grafana.vm.box = "centos/7"
+    grafana.vm.network "private_network", ip: "192.168.56.22"
+    grafana.vm.network "forwarded_port", guest: 3000, host: 3000
+    grafana.vm.hostname = "grafana"
+    grafana.vm.provider "virtualbox" do |vb|
+      vb.name = "grafana"
+      vb.gui = false
+      vb.memory = "1024"
+    end
+  end
+
+end
+
+
+$script = <<-SCRIPT
+yum install -y epel-release
+yum clean all && yum makecache
+yum -y update
+yum install -y mc wget curl zip tree vim-enhanced java-1.8.0-openjdk
+SCRIPT
