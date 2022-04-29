@@ -33,12 +33,14 @@ except Exception as e1:
 
 
 # Read java keystore file
-try:
-    command_output = []
-    with subprocess.Popen(f"keytool -list -v -keystore {jks_filepath} --storepass {jks_password}", shell=True, close_fds=True, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8") as proc:
-        command_output = proc.stdout.readlines()
-except Exception as e2:
-    print(f"Error. Check your keystore. {e2}")
+def read_keystore():
+    try:
+        keystore_output = []
+        with subprocess.Popen(f"keytool -list -v -keystore {jks_filepath} --storepass {jks_password}", shell=True, close_fds=True, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8") as proc:
+            keystore_output = proc.stdout.readlines()
+    except Exception as e2:
+        print(f"Error. Check your keystore. {e2}")
+    return keystore_output
 
 
 # # Writing to file for testing goals
@@ -70,12 +72,12 @@ def save_to_file(data, filename):
 
 
 # Read data from java keystore (*.jks format)
-def read_java_keystore():
+def parse_java_keystore(keystore_output):
     cert_list = []
     cert_fields_dict_outer = dict()
     cert_fields_dict_inner = dict()
     elements_list = ["Alias name:", "Owner:", "Issuer:", "Serial number:", "Valid from:", "SHA1:", "SHA256:"]
-    for line in command_output:
+    for line in keystore_output:
         cert_fields_dict_outer = cert_fields_dict_inner
         cert_list.append(cert_fields_dict_outer)
         cert_fields_dict_inner = {}
@@ -145,6 +147,8 @@ def get_prepared_certs_list(list_of_dictionaries):
 # Get metrics
 class CustomCollector(object):
     def collect(self):
+        jks_unprepared_list = parse_java_keystore(read_keystore())
+        jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
         date_format_cert = "%a %b %d %H:%M:%S %Z %Y"
         date_format_os = "%Y-%m-%d %H:%M:%S.%f"
         dt_obj = datetime.now()
@@ -170,13 +174,13 @@ class CustomCollector(object):
             print(f"Error {str(ex)}")
 
 
-# Get list of certs from jks file
-jks_unprepared_list = read_java_keystore()
-save_to_file(jks_unprepared_list, "jks")
-
-# Get ordered list of certificates data, prepared for next processing
-jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
-save_to_file(jks_prepared_list, "prepared_certs_list")
+# # Get list of certs from jks file
+# jks_unprepared_list = parse_java_keystore(read_keystore())
+# save_to_file(jks_unprepared_list, "jks")
+#
+# # Get ordered list of certificates data, prepared for next processing
+# jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
+# save_to_file(jks_prepared_list, "prepared_certs_list")
 
 # Run http-server
 if __name__ == '__main__':

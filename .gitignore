@@ -1,2 +1,6 @@
 .idea/
 .idea/*
+.vagrant/
+.vagrant/*
+/centos7/Prometheus/lab/jks_exporter/jks.json
+/centos7/Prometheus/lab/jks_exporter/prepared_certs_list.json
