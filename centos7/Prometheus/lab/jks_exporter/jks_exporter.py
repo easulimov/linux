@@ -14,9 +14,9 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY
 # Get process ID
 PID = os.getpid()
 
-#Ghange
-os_name = os.name
-print(os_name)
+# #Ghange
+# os_name = os.name
+# print(os_name)
 
 # Configuration file parsing
 settings = "settings.ini"
@@ -57,9 +57,7 @@ def get_local_tzname():
     print(local_tzname)
     print(local_tz_utc)
 
-
 get_local_tzname()
-
 
 # Save data to json file
 def save_to_file(data, filename):
@@ -119,6 +117,39 @@ def get_prepared_certs_list(list_of_dictionaries):
             buffer_dictionary.update(list_of_dictionaries[i])
             start_index = 2
     return prepared_certs_list
+
+
+# Delete timezone value
+def delete_tz_value(prepared_certs_list):
+    deleted_tz_list = []
+    for dict in prepared_certs_list:
+        buffer_list = []
+        for key, value in dict.items():
+            if key == 'Valid from':
+                buffer_list = value.split()
+                del(buffer_list[-2])
+                buffer_string = " ".join(buffer_list)
+                value = buffer_string
+                dict.update({key:value})
+                # print(f"Original dict {key, value}")
+                # print(f"Buffer string: {buffer_string}")
+                # print(f"Buffer: {buffer_list}")
+            if key == 'Valid until':
+                buffer_list = value.split()
+                del(buffer_list[-2])
+                buffer_string = " ".join(buffer_list)
+                value = buffer_string
+                dict.update({key:value})
+                # print(f"Original dict {key, value}")
+                # print(f"Buffer string: {buffer_string}")
+                # print(f"Buffer: {buffer_list}")
+    return prepared_certs_list
+
+
+# jks_un = parse_java_keystore(read_keystore())
+# jks_prep = get_prepared_certs_list(jks_un)
+# print(delete_tz_value(jks_prep))
+
 
     # %b: Returns the first three characters of the month name. In our example, it returned "Sep"
     # %d: Returns day of the month, from 1 to 31. In our example, it returned "15".
