@@ -149,7 +149,6 @@ class CustomCollector(object):
     def collect(self):
         jks_unprepared_list = parse_java_keystore(read_keystore())
         jks_prepared_list = rebuild_date_value(get_prepared_certs_list(jks_unprepared_list))
-        print(jks_prepared_list)
         save_to_file(jks_prepared_list, "prepared_certs_list")
         current_time_epoch = time.time()
         try:
@@ -165,8 +164,13 @@ class CustomCollector(object):
                 expiry_days = expiry/86400
                 # expiry_days = round((expiry/86400))
                 for key, value in cert.items():
-                    label_keys.append(key)
-                    label_values.append(value)
+                    if key == "Valid from" or key == "Valid until":
+                        buffer = value.split(".", 1)[0].strip()
+                        label_keys.append(key)
+                        label_values.append(buffer)
+                    else:
+                        label_keys.append(key)
+                        label_values.append(value)
                 g = GaugeMetricFamily("jks_certificate_expiry_days", "Days before the expiration of the certificate in Java Key Store", labels=label_keys)
                 g.add_metric(label_values, expiry_days)
                 yield g
