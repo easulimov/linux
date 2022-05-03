@@ -48,27 +48,6 @@ def read_keystore():
 # with io.open(f"testfile.txt", "w", encoding="utf-8") as file:
 #     file.writelines(command_output)
 
-# Get local timezone
-def get_local_tzname():
-    now = datetime.now()
-    local_now = now.astimezone()
-    local_tz = local_now.tzinfo
-    local_tz_utc = local_tz.fromutc(local_now)
-    local_tzname = local_tz.tzname(local_now)
-    print(local_now)
-    print(local_tz)
-    print(local_tzname)
-    print(local_tz_utc)
-
-
-# get_local_tzname()
-# date_format = "%Y-%m-%d %H:%M:%S.%f%z"
-# dt_test = datetime.strptime("2022-05-01 04:45:14.000000+07:00", date_format)
-# dt_n = datetime.now().astimezone()
-# print(f"dt_test {dt_test}")
-# print(f"time now {dt_n}")
-# dt_sub = dt_test-dt_n
-# print(f"Substraction res: {dt_sub.days}")
 
 # Save data to json file
 def save_to_file(data, filename):
@@ -130,93 +109,6 @@ def get_prepared_certs_list(list_of_dictionaries):
     return prepared_certs_list
 
 
-# # Delete timezone value
-# def delete_tz_value(prepared_certs_list):
-#     deleted_tz_list = []
-#     for dict in prepared_certs_list:
-#         buffer_list = []
-#         for key, value in dict.items():
-#             if key == 'Valid from':
-#                 buffer_list = value.split()
-#                 del(buffer_list[-2])
-#                 buffer_string = " ".join(buffer_list)
-#                 value = buffer_string
-#                 dict.update({key: value})
-#                 # print(f"Original dict {key, value}")
-#                 # print(f"Buffer string: {buffer_string}")
-#                 # print(f"Buffer: {buffer_list}")
-#             if key == 'Valid until':
-#                 buffer_list = value.split()
-#                 del(buffer_list[-2])
-#                 buffer_string = " ".join(buffer_list)
-#                 value = buffer_string
-#                 dict.update({key:value})
-#                 # print(f"Original dict {key, value}")
-#                 # print(f"Buffer string: {buffer_string}")
-#                 # print(f"Buffer: {buffer_list}")
-#     return prepared_certs_list
-
-
-# jks_un = parse_java_keystore(read_keystore())
-# jks_prep = get_prepared_certs_list(jks_un)
-# print(delete_tz_value(jks_prep))
-
-
-    # %b: Returns the first three characters of the month name. In our example, it returned "Sep"
-    # %d: Returns day of the month, from 1 to 31. In our example, it returned "15".
-    # %Y: Returns the year in four-digit format. In our example, it returned "2018".
-    # %H: Returns the hour. In our example, it returned "00".
-    # %M: Returns the minute, from 00 to 59. In our example, it returned "00".
-    # %S: Returns the second, from 00 to 59. In our example, it returned "00".
-    # %a: Returns the first three characters of the weekday, e.g. Wed.
-    # %A: Returns the full name of the weekday, e.g. Wednesday.
-    # %B: Returns the full name of the month, e.g. September.
-    # %w: Returns the weekday as a number, from 0 to 6, with Sunday being 0.
-    # %m: Returns the month as a number, from 01 to 12.
-    # %p: Returns AM/PM for time.
-    # %y: Returns the year in two-digit format, that is, without the century. For example, "18" instead of "2018".
-    # %f: Returns microsecond from 000000 to 999999.
-    # %Z: Returns the timezone.
-    # %z: Returns UTC offset.
-    # %j: Returns the number of the day in the year, from 001 to 366.
-    # %W: Returns the week number of the year, from 00 to 53, with Monday being counted as the first day of the week.
-    # %U: Returns the week number of the year, from 00 to 53, with Sunday counted as the first day of each week.
-    # %c: Returns the local date and time version.
-    # %x: Returns the local version of date.
-    # %X: Returns the local version of time.
-
-
-# # Get metrics
-# class CustomCollector(object):
-#     def collect(self):
-#         jks_unprepared_list = parse_java_keystore(read_keystore())
-#         jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
-#         date_format_cert = "%a %b %d %H:%M:%S %Z %Y"
-#         date_format_os = "%Y-%m-%d %H:%M:%S.%f"
-#         dt_obj = datetime.now()
-#         dt_now = datetime.strptime(str(dt_obj), date_format_os)
-#         print(f"TIME from gauge: {dt_now}")
-#         try:
-#             for cert in jks_prepared_list:
-#                 label_keys = []
-#                 label_values = []
-#                 dt_until = datetime.strptime(cert["Valid until"], date_format_cert)
-#                 dt_expire = dt_until - dt_now
-#                 dt_expire = dt_expire.days
-#                 for key, value in cert.items():
-#                     label_keys.append(key)
-#                     label_values.append(value)
-#                 g = GaugeMetricFamily("jks_certificate_expiry_days", "Days before the expiration of the certificate in Java Key Store", labels=label_keys)
-#                 g.add_metric(label_values, dt_expire)
-#                 yield g
-#         except NameError as ne:
-#             print(f"Class CustomCollector(object). Name Error when trying get list of certs (jks_prepared_list), {str(ne)}")
-#         except TypeError as te:
-#             print(f"Class CustomCollector(object). Type Error when trying get list of certs (jks_prepared_list). {str(te)}")
-#         except Exception as ex:
-#             print(f"Error {str(ex)}")
-
-
 # Change timezone value
 def rebuild_date_value(prepared_certs_list):
     for dict in prepared_certs_list:
@@ -248,7 +140,7 @@ def rebuild_date_value(prepared_certs_list):
                 buffer_string = f"{weekday_value} {day_number_value} {month_value} {year_value} {time_value}.000000{timezone_value}"
                 value = buffer_string
                 dict.update({key: value})
-    print(prepared_certs_list)
+    # print(prepared_certs_list)
     return prepared_certs_list
 
 
@@ -256,29 +148,22 @@ def rebuild_date_value(prepared_certs_list):
 class CustomCollector(object):
     def collect(self):
         jks_unprepared_list = parse_java_keystore(read_keystore())
-        jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
-        rebuild_date_value(jks_prepared_list)
+        jks_prepared_list = rebuild_date_value(get_prepared_certs_list(jks_unprepared_list))
+        print(jks_prepared_list)
+        save_to_file(jks_prepared_list, "prepared_certs_list")
         current_time_epoch = time.time()
-        # date_format_cert = "%a %b %d %H:%M:%S.%f%z  "
-        # date_format_os = "%Y-%m-%d %H:%M:%S.%f"
-        # dt_obj = datetime.now()
-        # dt_now = datetime.strptime(str(dt_obj), date_format_os)
-        # print(f"TIME from gauge: {dt_now}")
         try:
             for cert in jks_prepared_list:
                 label_keys = []
                 label_values = []
-                # dt_until = datetime.strptime(cert["Valid until"], date_format_cert)
                 with subprocess.Popen(f"date +%s --date='{cert['Valid until']}'", shell=True,
                                       close_fds=True, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                       encoding="utf-8") as proc:
                     data_until_epoch = proc.stdout.read()
-                    print(data_until_epoch)
+                # Subtracting dates
                 expiry = int(data_until_epoch) - current_time_epoch
+                expiry_days = expiry/86400
                 # expiry_days = round((expiry/86400))
-                expiry_days = (expiry/86400)
-                # dt_expire = dt_until - dt_now
-                # dt_expire = dt_expire.days
                 for key, value in cert.items():
                     label_keys.append(key)
                     label_values.append(value)
