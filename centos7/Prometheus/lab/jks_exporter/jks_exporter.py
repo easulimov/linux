@@ -5,10 +5,11 @@ import os
 import subprocess
 import io
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import configparser
 from prometheus_client.exposition import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
+
 
 
 # Get process ID
@@ -54,10 +55,20 @@ def get_local_tzname():
     local_tz = local_now.tzinfo
     local_tz_utc = local_tz.fromutc(local_now)
     local_tzname = local_tz.tzname(local_now)
+    print(local_now)
+    print(local_tz)
     print(local_tzname)
     print(local_tz_utc)
 
-get_local_tzname()
+
+# get_local_tzname()
+# date_format = "%Y-%m-%d %H:%M:%S.%f%z"
+# dt_test = datetime.strptime("2022-05-01 04:45:14.000000+07:00", date_format)
+# dt_n = datetime.now().astimezone()
+# print(f"dt_test {dt_test}")
+# print(f"time now {dt_n}")
+# dt_sub = dt_test-dt_n
+# print(f"Substraction res: {dt_sub.days}")
 
 # Save data to json file
 def save_to_file(data, filename):
@@ -119,31 +130,31 @@ def get_prepared_certs_list(list_of_dictionaries):
     return prepared_certs_list
 
 
-# Delete timezone value
-def delete_tz_value(prepared_certs_list):
-    deleted_tz_list = []
-    for dict in prepared_certs_list:
-        buffer_list = []
-        for key, value in dict.items():
-            if key == 'Valid from':
-                buffer_list = value.split()
-                del(buffer_list[-2])
-                buffer_string = " ".join(buffer_list)
-                value = buffer_string
-                dict.update({key:value})
-                # print(f"Original dict {key, value}")
-                # print(f"Buffer string: {buffer_string}")
-                # print(f"Buffer: {buffer_list}")
-            if key == 'Valid until':
-                buffer_list = value.split()
-                del(buffer_list[-2])
-                buffer_string = " ".join(buffer_list)
-                value = buffer_string
-                dict.update({key:value})
-                # print(f"Original dict {key, value}")
-                # print(f"Buffer string: {buffer_string}")
-                # print(f"Buffer: {buffer_list}")
-    return prepared_certs_list
+# # Delete timezone value
+# def delete_tz_value(prepared_certs_list):
+#     deleted_tz_list = []
+#     for dict in prepared_certs_list:
+#         buffer_list = []
+#         for key, value in dict.items():
+#             if key == 'Valid from':
+#                 buffer_list = value.split()
+#                 del(buffer_list[-2])
+#                 buffer_string = " ".join(buffer_list)
+#                 value = buffer_string
+#                 dict.update({key: value})
+#                 # print(f"Original dict {key, value}")
+#                 # print(f"Buffer string: {buffer_string}")
+#                 # print(f"Buffer: {buffer_list}")
+#             if key == 'Valid until':
+#                 buffer_list = value.split()
+#                 del(buffer_list[-2])
+#                 buffer_string = " ".join(buffer_list)
+#                 value = buffer_string
+#                 dict.update({key:value})
+#                 # print(f"Original dict {key, value}")
+#                 # print(f"Buffer string: {buffer_string}")
+#                 # print(f"Buffer: {buffer_list}")
+#     return prepared_certs_list
 
 
 # jks_un = parse_java_keystore(read_keystore())
@@ -175,27 +186,104 @@ def delete_tz_value(prepared_certs_list):
     # %X: Returns the local version of time.
 
 
+# # Get metrics
+# class CustomCollector(object):
+#     def collect(self):
+#         jks_unprepared_list = parse_java_keystore(read_keystore())
+#         jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
+#         date_format_cert = "%a %b %d %H:%M:%S %Z %Y"
+#         date_format_os = "%Y-%m-%d %H:%M:%S.%f"
+#         dt_obj = datetime.now()
+#         dt_now = datetime.strptime(str(dt_obj), date_format_os)
+#         print(f"TIME from gauge: {dt_now}")
+#         try:
+#             for cert in jks_prepared_list:
+#                 label_keys = []
+#                 label_values = []
+#                 dt_until = datetime.strptime(cert["Valid until"], date_format_cert)
+#                 dt_expire = dt_until - dt_now
+#                 dt_expire = dt_expire.days
+#                 for key, value in cert.items():
+#                     label_keys.append(key)
+#                     label_values.append(value)
+#                 g = GaugeMetricFamily("jks_certificate_expiry_days", "Days before the expiration of the certificate in Java Key Store", labels=label_keys)
+#                 g.add_metric(label_values, dt_expire)
+#                 yield g
+#         except NameError as ne:
+#             print(f"Class CustomCollector(object). Name Error when trying get list of certs (jks_prepared_list), {str(ne)}")
+#         except TypeError as te:
+#             print(f"Class CustomCollector(object). Type Error when trying get list of certs (jks_prepared_list). {str(te)}")
+#         except Exception as ex:
+#             print(f"Error {str(ex)}")
+
+
+# Change timezone value
+def rebuild_date_value(prepared_certs_list):
+    for dict in prepared_certs_list:
+        d = datetime.now(timezone.utc).astimezone()  # local time
+        utc_stamp = str(d)
+        current_tz_value = utc_stamp[-6:]
+        for key, value in dict.items():
+            if key == 'Valid from':
+                buffer_list = value.split()
+                year_value = buffer_list.pop()
+                timezone_value = buffer_list.pop()
+                time_value = buffer_list.pop()
+                day_number_value = buffer_list.pop()
+                month_value = buffer_list.pop()
+                weekday_value = buffer_list.pop()
+                timezone_value = current_tz_value
+                buffer_string = f"{weekday_value} {day_number_value} {month_value} {year_value} {time_value}.000000{timezone_value}"
+                value = buffer_string
+                dict.update({key: value})
+            if key == 'Valid until':
+                buffer_list = value.split()
+                year_value = buffer_list.pop()
+                timezone_value = buffer_list.pop()
+                time_value = buffer_list.pop()
+                day_number_value = buffer_list.pop()
+                month_value = buffer_list.pop()
+                weekday_value = buffer_list.pop()
+                timezone_value = current_tz_value
+                buffer_string = f"{weekday_value} {day_number_value} {month_value} {year_value} {time_value}.000000{timezone_value}"
+                value = buffer_string
+                dict.update({key: value})
+    print(prepared_certs_list)
+    return prepared_certs_list
+
+
 # Get metrics
 class CustomCollector(object):
     def collect(self):
         jks_unprepared_list = parse_java_keystore(read_keystore())
         jks_prepared_list = get_prepared_certs_list(jks_unprepared_list)
-        date_format_cert = "%a %b %d %H:%M:%S %Z %Y"
-        date_format_os = "%Y-%m-%d %H:%M:%S.%f"
-        dt_obj = datetime.now()
-        dt_now = datetime.strptime(str(dt_obj), date_format_os)
+        rebuild_date_value(jks_prepared_list)
+        current_time_epoch = time.time()
+        # date_format_cert = "%a %b %d %H:%M:%S.%f%z  "
+        # date_format_os = "%Y-%m-%d %H:%M:%S.%f"
+        # dt_obj = datetime.now()
+        # dt_now = datetime.strptime(str(dt_obj), date_format_os)
+        # print(f"TIME from gauge: {dt_now}")
         try:
             for cert in jks_prepared_list:
                 label_keys = []
                 label_values = []
-                dt_until = datetime.strptime(cert["Valid until"], date_format_cert)
-                dt_expire = dt_until - dt_now
-                dt_expire = dt_expire.days
+                # dt_until = datetime.strptime(cert["Valid until"], date_format_cert)
+                with subprocess.Popen(f"date +%s --date='{cert['Valid until']}'", shell=True,
+                                      close_fds=True, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                      encoding="utf-8") as proc:
+                    data_until_epoch = proc.stdout.read()
+                    print(data_until_epoch)
+                expiry = int(data_until_epoch) - current_time_epoch
+                # expiry_days = round((expiry/86400))
+                expiry_days = (expiry/86400)
+                # dt_expire = dt_until - dt_now
+                # dt_expire = dt_expire.days
                 for key, value in cert.items():
                     label_keys.append(key)
                     label_values.append(value)
                 g = GaugeMetricFamily("jks_certificate_expiry_days", "Days before the expiration of the certificate in Java Key Store", labels=label_keys)
-                g.add_metric(label_values, dt_expire)
+                g.add_metric(label_values, expiry_days)
                 yield g
         except NameError as ne:
             print(f"Class CustomCollector(object). Name Error when trying get list of certs (jks_prepared_list), {str(ne)}")
@@ -203,6 +291,7 @@ class CustomCollector(object):
             print(f"Class CustomCollector(object). Type Error when trying get list of certs (jks_prepared_list). {str(te)}")
         except Exception as ex:
             print(f"Error {str(ex)}")
+
 
 
 # # Get list of certs from jks file
