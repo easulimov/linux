@@ -66,12 +66,20 @@ def parse_java_keystore(keystore_output):
         for element in elements_list:
             if line.find(element) != -1:
                 if element == "Valid from:":
-                    valid_from_key = "Valid from"
+                    valid_from_key = "Valid_from"
                     valid_from_value = line.split("Valid from:", 1)[1].strip().split("until:", 1)[0].strip()
-                    until_key = "Valid until"
+                    until_key = "Valid_until"
                     until_value = line.split("until:", 1)[1].strip()
                     cert_fields_dict_inner[valid_from_key] = valid_from_value
                     cert_fields_dict_inner[until_key] = until_value
+                elif element == "Alias name:":
+                    key = "Alias_name"
+                    value = line.split(":", 1)[1].strip()
+                    cert_fields_dict_inner[key] = value
+                elif element == "Serial number:":
+                    key = "Serial_number"
+                    value = line.split(":", 1)[1].strip()
+                    cert_fields_dict_inner[key] = value
                 else:
                     key = line.split(":", 1)[0].strip()
                     value = line.split(":", 1)[1].strip()
@@ -108,7 +116,7 @@ def rebuild_date_value(prepared_certs_list):
         utc_stamp = str(d)
         current_tz_value = utc_stamp[-6:]
         for key, value in dict.items():
-            if key == 'Valid from':
+            if key == 'Valid_from':
                 buffer_list = value.split()
                 year_value = buffer_list.pop()
                 timezone_value = buffer_list.pop()
@@ -120,7 +128,7 @@ def rebuild_date_value(prepared_certs_list):
                 buffer_string = f"{weekday_value} {day_number_value} {month_value} {year_value} {time_value}.000000{timezone_value}"
                 value = buffer_string
                 dict.update({key: value})
-            if key == 'Valid until':
+            if key == 'Valid_until':
                 buffer_list = value.split()
                 year_value = buffer_list.pop()
                 timezone_value = buffer_list.pop()
@@ -136,17 +144,37 @@ def rebuild_date_value(prepared_certs_list):
     return prepared_certs_list
 
 
+# # Change label names
+# def change_labels(prepared_certs_list):
+#     for dict in prepared_certs_list:
+#         dict["Alias_name"] = dict["Alias name"]
+#         del dict["Alias name"]
+#         dict["Serial_number"] = dict["Serial number"]
+#         del dict["Serial number"]
+#         dict["Valid_from"] = dict["Valid from"]
+#         del dict["Valid from"]
+#         dict["Valid_until"] = dict["Valid until"]
+#         del dict["Valid until"]
+#     return prepared_certs_list
+#
+#
+# jks_unprep = parse_java_keystore(read_keystore())
+# jks_prep = rebuild_date_value(get_prepared_certs_list(jks_unprep))
+# print(change_labels(jks_prep))
+
+
 # Get metrics
 class CustomCollector(object):
     def collect(self):
         jks_unprepared_list = parse_java_keystore(read_keystore())
+        #print(change_labels(jks_prepared_list))
         jks_prepared_list = rebuild_date_value(get_prepared_certs_list(jks_unprepared_list))
         current_time_epoch = time.time()
         try:
             for cert in jks_prepared_list:
                 label_keys = []
                 label_values = []
-                with subprocess.Popen(f"date +%s --date='{cert['Valid until']}'", shell=True,
+                with subprocess.Popen(f"date +%s --date='{cert['Valid_until']}'", shell=True,
                                       close_fds=True, bufsize=-1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                       encoding="utf-8") as proc:
                     data_until_epoch = proc.stdout.read()
@@ -155,7 +183,7 @@ class CustomCollector(object):
                 expiry_days = expiry/86400
                 # expiry_days = round((expiry/86400))
                 for key, value in cert.items():
-                    if key == "Valid from" or key == "Valid until":
+                    if key == "Valid_from" or key == "Valid_until":
                         buffer = value.split(".", 1)[0].strip()
                         label_keys.append(key)
                         label_values.append(buffer)
