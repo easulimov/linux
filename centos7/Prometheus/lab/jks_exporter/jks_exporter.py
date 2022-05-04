@@ -144,30 +144,10 @@ def rebuild_date_value(prepared_certs_list):
     return prepared_certs_list
 
 
-# # Change label names
-# def change_labels(prepared_certs_list):
-#     for dict in prepared_certs_list:
-#         dict["Alias_name"] = dict["Alias name"]
-#         del dict["Alias name"]
-#         dict["Serial_number"] = dict["Serial number"]
-#         del dict["Serial number"]
-#         dict["Valid_from"] = dict["Valid from"]
-#         del dict["Valid from"]
-#         dict["Valid_until"] = dict["Valid until"]
-#         del dict["Valid until"]
-#     return prepared_certs_list
-#
-#
-# jks_unprep = parse_java_keystore(read_keystore())
-# jks_prep = rebuild_date_value(get_prepared_certs_list(jks_unprep))
-# print(change_labels(jks_prep))
-
-
 # Get metrics
 class CustomCollector(object):
     def collect(self):
         jks_unprepared_list = parse_java_keystore(read_keystore())
-        #print(change_labels(jks_prepared_list))
         jks_prepared_list = rebuild_date_value(get_prepared_certs_list(jks_unprepared_list))
         current_time_epoch = time.time()
         try:
