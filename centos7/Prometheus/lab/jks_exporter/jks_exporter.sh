@@ -1,3 +1,15 @@
+pip3 install prometheus_client pyaml configparser
+useradd --no-create-home --shell /bin/false jks_exporter
+mkdir /etc/jks_exporter
+
+cat <<EOF | tee /etc/jks_exporter/settings.ini
+[default]
+http_port=8000
+jks_filepath="/home/sysadm/test.jks"
+jks_password="changeit"
+EOF
+
+cat <<EOF | tee /etc/jks_exporter/jks_exporter.py
 #!/usr/bin/env python3
 
 import json
@@ -17,7 +29,7 @@ PID = os.getpid()
 
 
 # Configuration file parsing
-settings = "settings.ini"
+settings = "/etc/jks_exporter/settings.ini"
 config = configparser.ConfigParser(interpolation=None)
 config.read(settings)
 
@@ -183,3 +195,26 @@ if __name__ == '__main__':
             time.sleep(1)
     except Exception as e:
         print(f"Error. Cannot start http server, {str(e)}")
+EOF
+
+chown -R jks_exporter:jks_exporter /etc/jks_exporter/
+chmod -R 0755 /etc/jks_exporter/
+chmod -R -x /etc/jks_exporter/settings.ini
+
+cat <<EOF | tee /etc/systemd/system/jks_exporter.service
+[Unit]
+Description=JKS Exporter Service
+After=network-online.target
+[Service]
+User=jks_exporter
+Group=jks_exporter
+Type=simple
+ExecStart=/usr/bin/python3 /etc/jks_exporter/jks_exporter.py
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now jks_exporter.service
+systemctl status jks_exporter.service
