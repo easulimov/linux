@@ -211,7 +211,6 @@ class CustomCollector(object):
                 label_keys = []
                 label_values = []
                 dt_until = datetime.strptime(cert["Valid_until"], date_format_cert)
-                print(dt_until)
                 dt_expire = dt_until - dt_now
                 dt_expire = dt_expire.total_seconds()
                 dt_expire = dt_expire / 86400
