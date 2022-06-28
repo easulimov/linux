@@ -8,7 +8,6 @@ Vagrant.configure(2) do |config|
   config.vm.define "psql01" do |psql01|
     psql01.vm.box = "centos/7"
     psql01.vm.network "private_network", ip: "192.168.56.111"
-    psql01.vm.network "forwarded_port", guest: 5432, host: 5432
     psql01.vm.provider "virtualbox" do |vb|
       vb.name = "psql01"
       vb.gui = false
@@ -18,7 +17,6 @@ Vagrant.configure(2) do |config|
   config.vm.define "psql02" do |psql02|
     psql02.vm.box = "centos/7"
     psql02.vm.network "private_network", ip: "192.168.56.112"
-    psql02.vm.network "forwarded_port", guest: 5432, host: 5432
     psql02.vm.provider "virtualbox" do |vb|
       vb.name = "psql02"
       vb.gui = false
@@ -28,7 +26,6 @@ Vagrant.configure(2) do |config|
   config.vm.define "grafana01" do |grafana01|
     grafana01.vm.box = "centos/7"
     grafana01.vm.network "private_network", ip: "192.168.56.113"
-    grafana01.vm.network "forwarded_port", guest: 3000, host: 3000
     grafana01.vm.provider "virtualbox" do |vb|
       vb.name = "grafana01"
       vb.gui = false
