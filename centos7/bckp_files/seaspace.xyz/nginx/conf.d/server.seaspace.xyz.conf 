@@ -1,0 +1,35 @@
+server {
+	listen 80;
+	server_name server.seaspace.xyz;
+	access_log /var/log/nginx/server.seaspace.xyz.access.log main;
+        error_log /var/log/nginx/server.seaspace.xyz.error.log;
+	root /var/web/sites/wordpress/;
+
+	location / {
+                 index index.php index.html;
+                 }
+
+         location ~ \.php$ {
+                 try_files  $uri $uri/ /index.php?$args  =404;
+                 fastcgi_pass   unix:/run/php-fpm/www.sock;
+                 fastcgi_index index.php;
+                 fastcgi_param DOCUMENT_ROOT   /var/web/sites/wordpress/;
+                 fastcgi_param SCRIPT_FILENAME /var/web/sites/wordpress$fastcgi_script_name;
+                 fastcgi_param PATH_TRANSLATED /var/web/sites/wordpress$fastcgi_script_name;
+                 include fastcgi_params;
+   # fastcgi_param QUERY_STRING $query_string;
+   # fastcgi_param REQUEST_METHOD $request_method;
+   # fastcgi_param CONTENT_TYPE $content_type;
+   # fastcgi_param CONTENT_LENGTH $content_length;
+   # fastcgi_param HTTPS on;
+   # fastcgi_intercept_errors on;
+   # fastcgi_ignore_client_abort off;
+   # fastcgi_connect_timeout 60;
+   # fastcgi_send_timeout 180;
+   # fastcgi_read_timeout 180;
+   # fastcgi_buffer_size 128k;
+   # fastcgi_buffers 4 256k;
+   # fastcgi_busy_buffers_size 256k;
+   # fastcgi_temp_file_write_size 256k;
+    }
+}
