@@ -1,0 +1,52 @@
+Vagrant.configure(2) do |config|
+
+  # Use the same key for each machine
+  config.ssh.insert_key = false
+
+  config.vm.provision "shell", inline: $script
+
+  config.vm.define "vmagent1" do |vmagent1|
+    vmagent1.vm.box = "centos/7"
+    vmagent1.vm.network "private_network", ip: "192.168.56.10"
+    vmagent1.vm.hostname = "vmagent1"
+    vmagent1.vm.provider "virtualbox" do |vb|
+      vb.name = "vmagent1"
+      vb.gui = false
+      vb.cpus = "1"
+      vb.memory = "1024"
+    end
+  end
+  config.vm.define "vmagent2" do |vmagent2|
+    vmagent2.vm.box = "centos/7"
+    vmagent2.vm.network "private_network", ip: "192.168.56.11"
+    vmagent2.vm.hostname = "vmagent2"
+    vmagent2.vm.provider "virtualbox" do |vb|
+      vb.name = "vmagent2"
+      vb.gui = false
+      vb.cpus = "1"
+      vb.memory = "1024"
+    end
+  end
+  config.vm.define "vmagent3" do |vmagent3|
+    vmagent3.vm.box = "centos/7"
+    vmagent3.vm.network "private_network", ip: "192.168.56.12"
+    vmagent3.vm.hostname = "vmagent3"
+    vmagent3.vm.provider "virtualbox" do |vb|
+      vb.name = "vmagent3"
+      vb.gui = false
+      vb.cpus = "1"
+      vb.memory = "1024"
+    end
+  end
+end
+
+
+$script = <<-SCRIPT
+yum install -y epel-release
+yum clean all && yum makecache
+yum -y update
+yum install -y mc wget curl zip tree vim-enhanced netcat bind-utils
+sed -i s/^SELINUX=.*$/SELINUX=disabled/ /etc/selinux/config
+sestatus
+reboot
+SCRIPT
