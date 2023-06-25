@@ -1,0 +1,55 @@
+yum update -y
+# Prepare VM
+yum install virt-manager libvirt-daemon-config-network bash-completion
+reboot
+
+
+systemctl start libvirtd.service
+systemctl enable libvirtd.service
+usermod -aG libvirt bart
+
+
+
+# Download and install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+kubectl version --client
+kubectl version --client --output=yaml
+
+# Install bash-completion 
+sudo yum install bash-completion
+source /usr/share/bash-completion/bash_completion
+type _init_completion
+
+echo 'source <(kubectl completion bash)' >>~/.bashrc
+echo 'alias k=kubectl' >>~/.bashrc
+echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
+
+source ~/.bashrc
+
+# Download and install kubectl-convert
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl-convert"
+sudo install -o root -g root -m 0755 kubectl-convert /usr/local/bin/kubectl-convert
+
+
+# Download and install minikube 
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+minikube config set vm-driver kvm2
+minikube start --vm-driver=kvm2
+
+
+# Run minikube dashboard
+# Enable kubectl proxy (firt terminal window)
+kubectl proxy --address='0.0.0.0' --disable-filter=true &
+
+# Get dashborad URL
+minikube dashboard --url
+
+# Change minikube dashboard URL: 127.0.0.1 to IP of VM and port to 8001 and paste URL in browser
+# Before
+http://127.0.0.1:37061/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+# After
+http://your_vm_ip_address:8001/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+
+
