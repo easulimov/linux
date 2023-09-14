@@ -1,0 +1,45 @@
+Vagrant.configure(2) do |config|
+
+  # Use the same key for each machine
+  config.ssh.insert_key = false
+
+  config.vm.provision "shell", inline: $script
+
+  config.vm.define "nginx01" do |nginx01|
+    nginx01.vm.box = "ubuntu/focal64"
+    nginx01.vm.network "public_network", ip: "192.168.3.100", bridge: "wlp0s20f3"
+    nginx01.vm.provider "virtualbox" do |vb|
+      vb.name = "nginx01"
+      vb.gui = false
+      vb.memory = "1024"
+      vb.check_guest_additions = false
+    end
+  end
+  config.vm.define "grafana01" do |grafana01|
+    grafana01.vm.box = "ubuntu/focal64"
+    grafana01.vm.network "public_network", ip: "192.168.3.101", bridge: "wlp0s20f3"
+    grafana01.vm.provider "virtualbox" do |vb|
+      vb.name = "grafana01"
+      vb.gui = false
+      vb.memory = "1024"
+      vb.check_guest_additions = false
+    end
+  end
+  config.vm.define "grafana02" do |grafana02|
+    grafana02.vm.box = "ubuntu/focal64"
+    grafana02.vm.network "public_network", ip: "192.168.3.102", bridge: "wlp0s20f3"
+    grafana02.vm.provider "virtualbox" do |vb|
+      vb.name = "grafana02"
+      vb.gui = false
+      vb.memory = "1024"
+      vb.check_guest_additions = false
+    end
+  end
+end
+
+
+$script = <<-SCRIPT
+apt update
+apt upgrade
+apt install -y mc wget curl zip tree vim
+SCRIPT
