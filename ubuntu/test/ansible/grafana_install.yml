@@ -1,0 +1,41 @@
+---
+- hosts: grafana
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:
+
+  - name: "Get grafana package name"
+    set_fact:
+      grafana_deb: "grafana_10.1.2_amd64.deb"
+
+  - name: "Install dependecies for Grafana"
+    apt:
+      name: "{{ item }}"
+      update_cache: yes
+    loop:
+      - adduser
+      - libfontconfig1
+      - musl
+
+  - name: "Download grafana .deb"
+    get_url:
+      url: "https://dl.grafana.com/oss/release/{{ grafana_deb }}"
+      dest: /tmp
+      mode: '0555'
+
+  - name: "Install Grafana"
+    apt:
+      deb: "/tmp/{{ grafana_deb }}"
+    notify:
+      - "Run a grafana-server unit"
+
+  handlers:
+
+    - name: "Run a grafana-server unit"
+      systemd:
+        daemon-reload: true
+        enabled: true
+        state: restarted
+        name: grafana-server
