@@ -1,0 +1,7 @@
+---
+- hosts: postgresql
+  remote_user: vagrant
+  become: yes
+  become_user: root
+
+  tasks:

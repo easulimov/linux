@@ -7,3 +7,6 @@ all:
       hosts:
         grafana01: {ansible_host: "127.0.0.1", ansible_port: "2200"}
         grafana02: {ansible_host: "127.0.0.1", ansible_port: "2201"}
+    prometheus:
+      children:
+        nginx:

@@ -38,6 +38,17 @@ Vagrant.configure(2) do |config|
       vb.check_guest_additions = false
     end
   end
+  config.vm.define "psql01" do |psql01|
+    psql01.vm.box = "ubuntu/focal64"
+    psql01.vm.hostname = "psql01"
+    psql01.vm.network "public_network", ip: "192.168.3.103", bridge: "wlp0s20f3"
+    psql01.vm.provider "virtualbox" do |vb|
+      vb.name = "psql01"
+      vb.gui = false
+      vb.memory = "1024"
+      vb.check_guest_additions = false
+    end
+  end
 end
 
 
