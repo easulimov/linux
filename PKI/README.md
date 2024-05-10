@@ -246,7 +246,7 @@ vim /root/ca/intermediate/openssl.cnf
 <br>
 Содержимое файла ***/root/ca/intermediate/openssl.cnf***
 
-```
+```ini
 # OpenSSL intermediate CA configuration file.
 # Copy to `/root/ca/intermediate/openssl.cnf`.
 
@@ -488,6 +488,87 @@ chmod 444 intermediate/certs/ca-chain.cert.pem
 <br>
 
 ### Создание сертификата для сервера
-#### Создание конфигурационного файла sea.local.cnf
+#### Создание конфигурационного файла для серверного сертификата
+
+> Внимание! Пример для теста, небезопасно указывать в SAN localhost и 127.0.0.1 Также, стоит избегать использования wildcard
+<br>
+
+```bash
+cd /root/ca
+vim intermediate/sea.local.cnf
+```
+<br>
+
+Содержимое файла ***/root/ca/intermediate/sea.local.cnf
+```ini
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+[req_distinguished_name]
+C = RU
+ST = Moscow
+L = Moscow
+CN = *.sea.local
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = localhost
+DNS.2 = sea.local
+DNS.3 = *.sea.local
+IP.1 = 127.0.0.1
+```
+<br>
+
+#### Создание private key
+
+```bash
+cd /root/ca
+openssl genrsa -out intermediate/private/sea.local.key.pem 2048
+```
+<br>
+
+```bash
+chmod 400 intermediate/private/sea.local.key.pem
+```
+<br>
+
+#### Создание CSR(certificate signing request) для серверного сертификата
+
+```bash
+openssl req -config intermediate/sea.local.cnf -key intermediate/private/sea.local.key.pem -new -sha256 -out intermediate/csr/sea.local.csr.pem
+```
+<br>
+
+#### Создание серверного сертификата
+
+```bash
+openssl ca -config intermediate/openssl.cnf \
+-extensions server_cert -extensions server_cert usr_cert -days 375 -notext -md sha256 \
+-in intermediate/csr/sea.local.csr.pem \
+-out intermediate/certs/sea.local.cert.pem
+```
+<br>
+
+```bash
+chmod 444 intermediate/certs/sea.local.cert.pem
+```
+<br>
+
+ #### Проверка сертификата
+
+```bash
+openssl x509 -noout -text -in intermediate/certs/sea.local.cert.pem
+```
+<br>
+
+```bash
+openssl verify -CAfile intermediate/certs/ca-chain.cert.pem \
+intermediate/certs/sea.local.cert.pem
+```
+<br>
+
 
 
