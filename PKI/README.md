@@ -1,23 +1,51 @@
 # Описывается пример создание своего центра сертификации
 ### Подготовка директорий
+
+| Директория | Описание |
+|------------|-----------|
+| certs | Cодержит сертификаты, сгенерированные и подписанные ЦС. |
+| crl | Каталог списка отзыва сертификатов (CRL) содержит списки отзыва сертификатов, сгенерированные ЦС. |
+| newcerts | В этом каталоге хранится копия каждого сертификата, подписанного ЦС, с серийным номером сертификата в качестве имени файла. |
+| private | Этот каталог содержит закрытые ключи для ЦС, включая закрытые ключи корневого ЦС и промежуточного ЦС. Эти ключи используются для подписи сертификатов и CRL. |
+| csr | В этом каталоге хранится копия каждого запроса сертификата. |
+<br>
+
 ```bash
-mkdir /root/ca
-cd /root/ca
-mkdir certs crl newcerts private
-chmod 700 private
-touch index.txt
-echo 1000 > serial
+mkdir -p /root/ca/{certs,crl,newcerts,private,csr}
 ```
 <br>
 
 ```bash
-mkdir /root/ca/intermediate
-cd /root/ca/intermediate
-mkdir certs crl csr newcerts private
+cd /root/ca
 chmod 700 private
-touch index.txt
-echo 1000 > serial
-echo 1000 > /root/ca/intermediate/crlnumber
+touch index
+touch serial
+touch crlnumber
+openssl rand -hex 20 > serial
+echo 00 > crlnumber
+```
+<br>
+
+| Файл | Описание |
+|------------|-----------|
+| index | Выступает в качестве плоской базы для отслеживания выписанных сертификатов. |
+| serial | 	Используется для отслеживания последнего серийного номера, который был использован для выдачи сертификата. Важно, чтобы никогда не было выдано двух сертификатов с одинаковым серийным номером от одного и того же ЦС.|
+| crlnumber | Содержит текущий номер CRL. Номер CRL — это уникальное целое число, которое увеличивается каждый раз при создании нового списка отзыва сертификатов (CRL). Это помогает отслеживать последние CRL, выданные ЦС, и гарантировать, что CRL выдаются в надлежащей последовательности. |
+<br>
+
+```bash
+mkdir -p /root/ca/intermediate/{certs,crl,csr,newcerts,private}
+```
+<br>
+
+```bash
+cd /root/ca/intermediate
+chmod 700 private
+touch index
+touch serial
+touch crlnumber
+openssl rand -hex 20 > serial
+echo 00 > crlnumber
 ```
 <br>
 
@@ -26,142 +54,110 @@ echo 1000 > /root/ca/intermediate/crlnumber
 Требуется создать файл с конфигурацией 
 ```bash
 cd /root/ca
-vim /root/ca/openssl.cnf
+vim /root/ca/openssl-root.cnf
 ```
 <br>
-Содержимое файла ***/root/ca/openssl.cnf***
+Содержимое файла ***/root/ca/openssl-root.cnf***
 
 ```ini
 [ ca ]
-#man ca
+#
+# OpenSSL configuration for the Root Certification Authority.
+#
+
+[ ca ]
 default_ca = CA_default
 
 [ CA_default ]
 # Directory and file locations.
-dir               = /root/ca
+dir               = /root/ca/
 certs             = $dir/certs
 crl_dir           = $dir/crl
 new_certs_dir     = $dir/newcerts
-database          = $dir/index.txt
+database          = $dir/index
 serial            = $dir/serial
 RANDFILE          = $dir/private/.rand
 
-# The root key and root certificate.  
- private_key       = $dir/private/ca.key.pem  
- certificate       = $dir/certs/ca.cert.pem
+# The root key and root certificate.
+private_key       = $dir/private/rootca.key
+certificate       = $dir/certs/rootca.crt
 
-# For certificate revocation lists.  
- crlnumber         = $dir/crlnumber  
- crl               = $dir/crl/ca.crl.pem  
- crl_extensions    = crl_ext  
- default_crl_days  = 30
+# For certificate revocation lists.
+crlnumber         = $dir/crlnumber
+crl               = $dir/crl/rootca.crl
+crl_extensions    = crl_ext
+default_crl_days  = 182
 
-# SHA-1 is deprecated, so use SHA-2 instead.  
- default_md        = sha256
+default_md        = sha256
 
-name_opt          = ca_default  
- cert_opt          = ca_default  
- default_days      = 375  
- preserve          = no  
- policy            = policy_strict
+name_opt          = ca_default
+cert_opt          = ca_default
 
+default_days      = 3650
+default_md        = sha256
 
+preserve          = no
+unique_subject    = no
+
+policy            = policy_strict
+
+# For the CA policy
 [ policy_strict ]
-# The root CA should only sign intermediate certificates that match.
-# See the POLICY FORMAT section of man ca.
-countryName             = match
-stateOrProvinceName     = match
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
-
-[ policy_loose ]
-# Allow the intermediate CA to sign a more diverse range of certificates.
-# See the POLICY FORMAT section of the `ca` man page.
 countryName             = optional
 stateOrProvinceName     = optional
-localityName            = optional
 organizationName        = optional
 organizationalUnitName  = optional
 commonName              = supplied
 emailAddress            = optional
 
 [ req ]
-# Options for the `req` tool (`man req`).
 default_bits        = 2048
 distinguished_name  = req_distinguished_name
 string_mask         = utf8only
 
-# SHA-1 is deprecated, so use SHA-2 instead.  
 default_md          = sha256
+default_keyfile     = private/rootca.key
 
-# Extension to add when the -x509 option is used.  
 x509_extensions     = v3_ca
 
 [ req_distinguished_name ]
-# See https://en.wikipedia.org/wiki/Certificate_signing_request.
 countryName                     = Country Name (2 letter code)
-stateOrProvinceName             = State or Province Name
-localityName                    = Locality Name
-organizationName                = Organization Name
-organizationalUnitName          = Organizational Unit Name
-commonName                      = Common Name
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+organizationName                = Organization Name (eg, company)
+organizationalUnitName          = Organizational Unit Name (eg, section)
+commonName                      = Common Name (eg, your name or your server hostname)
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.  
-countryName_default             = RU  
-stateOrProvinceName_default     = Moscow  
-localityName_default            = Moscow  
-organizationName_default       = SEA_TEST_ORG  
-organizationalUnitName_default  = IT 
+countryName_default             = RU
+stateOrProvinceName_default     = Moscow
+localityName_default            = Moscow
+organizationName_default       = SEA_TEST_ORG
+organizationalUnitName_default  = IT
 emailAddress_default            = admin@sea.local
 
 [ v3_ca ]
-# Extensions for a typical CA (`man x509v3_config`).
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer
+basicConstraints         = critical, CA:true
+keyUsage                 = critical, digitalSignature, cRLSign, keyCertSign
 
 [ v3_intermediate_ca ]
-# Extensions for a typical intermediate CA (`man x509v3_config`).
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true, pathlen:0
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer
 
-[ usr_cert ]
-# Extensions for client certificates (`man x509v3_config`).
-basicConstraints = CA:FALSE
-nsCertType = client, email
-nsComment = "OpenSSL Generated Client Certificate"
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = clientAuth, emailProtection
-
-[ server_cert ]
-# Extensions for server certificates (`man x509v3_config`).
-basicConstraints = CA:FALSE
-nsCertType = server
-nsComment = "OpenSSL Generated Server Certificate"
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer:always
-keyUsage = critical, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
+# As pathlen restricts creating any further intermidiate CA in the chain.
+basicConstraints         = critical, CA:true, pathlen:0
+keyUsage                 = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints    = crldp1_section
 
 [ crl_ext ]
-# Extension for CRLs (`man x509v3_config`).
-authorityKeyIdentifier=keyid:always
+# CRL extensions.
+authorityKeyIdentifier   = keyid:always,issuer
 
-[ ocsp ]
-# Extension for OCSP signing certificates (`man ocsp`).
-basicConstraints = CA:FALSE
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-keyUsage = critical, digitalSignature
-extendedKeyUsage = critical, OCSPSigning
+[ crldp1_section ]
+fullname                 = URI:http://ca.sea.local/rootca.crl
 ```
 <br>
 
@@ -169,7 +165,7 @@ extendedKeyUsage = critical, OCSPSigning
 
 ```bash
 cd /root/ca
-openssl genrsa -aes256 -out private/ca.key.pem 4096
+openssl genrsa -aes256 -out private/rootca.key 4096
 ```
 <br>
 
@@ -181,7 +177,7 @@ Verifying - Enter pass phrase for ca.key.pem: secretpassword
 <br>
 
 ```bash
-chmod 400 private/ca.key.pem
+chmod 400 private/rootca.key.pem
 ```
 <br>
 
@@ -189,7 +185,7 @@ chmod 400 private/ca.key.pem
 
 ```bash
 cd /root/ca
-openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem
+openssl req -config openssl-root.cnf -key private/rootca.key -new -x509 -days 7300 -rand_serial -sha256 -extensions v3_ca -out certs/rootca.crt
 ```
 <br>
 
@@ -214,7 +210,7 @@ emailAddress_default            = admin@sea.local
 
 Например:
 ```
-openssl req -config openssl.cnf -key private/ca.key.pem -new -x509 -days 7300 -sha256 -extensions v3_ca -out certs/ca.cert.pem
+openssl req -config openssl-root.cnf -key private/rootca.key -new -x509 -days 7300 -rand_serial -sha256 -extensions v3_ca -out certs/rootca.crt
 -----
 Country Name (2 letter code) [XX]: RU
 State or Province Name []: Moscow
@@ -235,6 +231,22 @@ chmod 444 certs/ca.cert.pem
 ```bash
 openssl x509 -noout -text -in certs/ca.cert.pem
 ```
+<br>
+
+#### Списки отзывов сертификатов 
+
+Создать начальный, хоть и пустой CRL корневого ЦС:
+```bash
+openssl ca -config openssl-root.cnf -gencrl -out crl/rootca.crl
+```
+<br>
+
+Вывести информацию о списке отзыва:
+```bash
+openssl crl -in crl/rootca.crl -text -noout
+```
+<br>
+
 
 ### INTERMEDIATE CA
 #### Создание конфигурационного файла для INTERMEDIATE CA
