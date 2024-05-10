@@ -501,18 +501,18 @@ vim intermediate/sea.local.cnf
 
 Содержимое файла ***/root/ca/intermediate/sea.local.cnf
 ```ini
-[req]
+[ req ]
+default_bits       = 2048
 distinguished_name = req_distinguished_name
-x509_extensions = v3_req
+req_extensions     = req_ext
 prompt = no
-[req_distinguished_name]
-C = RU
-ST = Moscow
-L = Moscow
-CN = *.sea.local
-[v3_req]
-keyUsage = keyEncipherment, dataEncipherment
-extendedKeyUsage = serverAuth
+[ req_distinguished_name ]
+countryName = RU
+stateOrProvinceName = Moscow
+localityName = Moscow
+organizationName = SEA_TEST_ORG
+commonName = *.sea.local
+[ req_ext ]
 subjectAltName = @alt_names
 [alt_names]
 DNS.1 = localhost
