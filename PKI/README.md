@@ -489,6 +489,21 @@ chmod 444 intermediate/certs/cachain.crt
 ```
 <br>
 
+#### Списки отзывов сертификатов 
+
+Создать начальный, хоть и пустой CRL корневого ЦС:
+```bash
+cd /root/ca
+openssl ca -config openssl-intermediateca.cnf -gencrl -out intermediate/crl/intermediateca.crl
+```
+<br>
+
+Вывести информацию о списке отзыва:
+```bash
+openssl crl -in intermediate/crl/intermediateca.crl -text -noout
+```
+<br>
+
 ### Создание сертификата для сервера
 #### Создание конфигурационного файла для серверного сертификата
 
@@ -504,18 +519,39 @@ vim intermediate/sea.local.cnf
 Содержимое файла ***/root/ca/intermediate/sea.local.cnf***
 ```ini
 [ req ]
-default_bits       = 2048
-distinguished_name = req_distinguished_name
-req_extensions     = req_ext
+default_bits        = 2048
+default_md          = sha256
+string_mask         = utf8only
+x509_extensions     = req_ext
+distinguished_name  = req_distinguished_name
 prompt = no
+
 [ req_distinguished_name ]
-countryName = RU
-stateOrProvinceName = Moscow
-localityName = Moscow
-organizationName = SEA_TEST_ORG
-commonName = *.sea.local
+C = RU
+ST = Moscow
+L = Moscow
+CN = sea.local
+
+# Common paramets
+# C   = Country Name (2 letter code) - AE
+# ST  = State or Province Name (full name) - Emirate of Dubai
+# L   = Locality Name (eg, city) - Dubai
+# O   = Organization Name - NORD RIM
+# OU  = Organizational Unit Name (eg, section) - IT
+# CN  = Common Name (eg, your name or your server\'s hostname)
+
 [ req_ext ]
-subjectAltName = @alt_names
+basicConstraints        = CA:FALSE
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid,issuer
+keyUsage                = digitalSignature, keyEncipherment
+extendedKeyUsage        = serverAuth, clientAuth
+subjectAltName          = @alt_names
+crlDistributionPoints   = crldp1_section
+
+[ crldp1_section ]
+fullname = URI:http://ca.sea.local/intermediateca.crl
+
 [alt_names]
 DNS.1 = localhost
 DNS.2 = sea.local
@@ -528,47 +564,44 @@ IP.1 = 127.0.0.1
 
 ```bash
 cd /root/ca
-openssl genrsa -out intermediate/private/sea.local.key.pem 2048
+openssl genrsa -out intermediate/private/sea.local.key 2048
 ```
 <br>
 
 ```bash
-chmod 400 intermediate/private/sea.local.key.pem
+chmod 400 intermediate/private/sea.local.key
 ```
 <br>
 
 #### Создание CSR(certificate signing request) для серверного сертификата
 
 ```bash
-openssl req -config intermediate/sea.local.cnf -key intermediate/private/sea.local.key.pem -new -sha256 -out intermediate/csr/sea.local.csr.pem
+openssl req -config intermediate/sea.local.cnf -extensions req_ext -new -sha256 -key intermediate/private/sea.local.key -out intermediate/csr/sea.local.csr
 ```
 <br>
 
 #### Создание серверного сертификата
 
 ```bash
-openssl ca -config intermediate/openssl.cnf \
--extensions server_cert -days 375 -notext -md sha256 \
--in intermediate/csr/sea.local.csr.pem \
--out intermediate/certs/sea.local.cert.pem
+openssl ca -batch -config openssl-intermediateca.cnf -extfile intermediate/sea.local.cnf -extensions req_ext -days 365 -rand_serial -notext -in intermediate/csr/sea.local.csr -out intermediate/certs/sea.local.crt
 ```
 <br>
 
 ```bash
-chmod 444 intermediate/certs/sea.local.cert.pem
+chmod 444 intermediate/certs/sea.local.crt
 ```
 <br>
 
  #### Проверка сертификата
 
 ```bash
-openssl x509 -noout -text -in intermediate/certs/sea.local.cert.pem
+openssl x509 -noout -text -in intermediate/certs/sea.local.crt
 ```
 <br>
 
 ```bash
-openssl verify -CAfile intermediate/certs/ca-chain.cert.pem \
-intermediate/certs/sea.local.cert.pem
+openssl verify -CAfile intermediate/certs/cachain.crt \
+intermediate/certs/sea.local.crt
 ```
 <br>
 
