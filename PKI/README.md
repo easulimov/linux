@@ -546,7 +546,7 @@ openssl req -config intermediate/sea.local.cnf -key intermediate/private/sea.loc
 
 ```bash
 openssl ca -config intermediate/openssl.cnf \
--extensions server_cert -extensions server_cert usr_cert -days 375 -notext -md sha256 \
+-extensions server_cert -extensions server_cert -days 375 -notext -md sha256 \
 -in intermediate/csr/sea.local.csr.pem \
 -out intermediate/certs/sea.local.cert.pem
 ```
