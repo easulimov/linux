@@ -498,7 +498,7 @@ chmod 444 intermediate/certs/cachain.crt
 Создать начальный, хоть и пустой CRL корневого ЦС:
 ```bash
 cd /root/ca
-openssl ca -config openssl-intermediateca.cnf -gencrl -out intermediate/crl/intermediateca.crl
+openssl ca -config intermediate/openssl-intermediate.cnf -gencrl -out intermediate/crl/intermediateca.crl
 ```
 <br>
 
