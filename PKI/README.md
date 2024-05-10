@@ -480,7 +480,7 @@ openssl verify -CAfile certs/rootca.crt intermediate/certs/intermediateca.crt
 #### Создание цепочки корневых сертификатов
 
 ```bash
-cat iintermediate/certs/intermediateca.crt certs/rootca.crt > intermediate/certs/cachain.crt
+cat intermediate/certs/intermediateca.crt certs/rootca.crt > intermediate/certs/cachain.crt
 ```
 <br>
 
