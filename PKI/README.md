@@ -177,7 +177,7 @@ Verifying - Enter pass phrase for ca.key.pem: secretpassword
 <br>
 
 ```bash
-chmod 400 private/rootca.key.pem
+chmod 400 private/rootca.key
 ```
 <br>
 
