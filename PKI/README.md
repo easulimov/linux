@@ -587,7 +587,7 @@ openssl req -config intermediate/sea.local.cnf -extensions req_ext -new -sha256 
 #### Создание серверного сертификата
 
 ```bash
-openssl ca -batch -config openssl-intermediateca.cnf -extfile intermediate/sea.local.cnf -extensions req_ext -days 365 -rand_serial -notext -in intermediate/csr/sea.local.csr -out intermediate/certs/sea.local.crt
+openssl ca -batch -config openssl-intermediate.cnf -extfile intermediate/sea.local.cnf -extensions req_ext -days 365 -rand_serial -notext -in intermediate/csr/sea.local.csr -out intermediate/certs/sea.local.crt
 ```
 <br>
 
