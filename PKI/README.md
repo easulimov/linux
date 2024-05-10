@@ -330,7 +330,7 @@ emailAddress                    = Email Address
 countryName_default             = RU
 stateOrProvinceName_default     = Moscow
 localityName_default            = Moscow
-organizationName_default       = SEA_TEST_ORG
+0.organizationName_default        = SEA_TEST_ORG
 organizationalUnitName_default  = IT
 emailAddress_default            = admin@sea.local
 
