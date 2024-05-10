@@ -1,5 +1,6 @@
 # Описывается пример создание своего центра сертификации
 Источники:
+https://www.opennet.ru/base/sec/openssl.txt.html
 https://sysos.ru/archives/668#i-4
 https://sgolubev.ru/openssl-ca/
 
