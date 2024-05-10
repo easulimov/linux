@@ -1,5 +1,6 @@
 # Описывается пример создание своего центра сертификации
 Источники:
+https://github.com/ilyabobrusev/alpha/blob/master/alpha/ssl%20tls/commands.txt
 https://www.opennet.ru/base/sec/openssl.txt.html
 https://ispserver.ru/help/open-ssl-commands
 https://sysos.ru/archives/668#i-4
