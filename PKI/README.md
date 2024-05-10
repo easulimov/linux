@@ -93,7 +93,7 @@ default_md        = sha256
 name_opt          = ca_default
 cert_opt          = ca_default
 
-default_days      = 3650
+default_days      = 7300
 default_md        = sha256
 
 preserve          = no
@@ -223,13 +223,13 @@ Email Address []: admin@sea.local
 <br>
 
 ```bash
-chmod 444 certs/ca.cert.pem
+chmod 444 certs/rootca.crt
 ```
 <br>
 
 #### Проверка ROOT CA
 ```bash
-openssl x509 -noout -text -in certs/ca.cert.pem
+openssl x509 -noout -text -in certs/rootca.crt
 ```
 <br>
 
@@ -253,17 +253,17 @@ openssl crl -in crl/rootca.crl -text -noout
 
 Требуется создать файл с конфигурацией 
 ```bash
-vim /root/ca/intermediate/openssl.cnf
+vim /root/ca/intermediate/openssl-intermediate.cnf
 ```
 <br>
-Содержимое файла ***/root/ca/intermediate/openssl.cnf***
+Содержимое файла ***/root/ca/intermediate/openssl-intermediate.cnf***
 
 ```ini
-# OpenSSL intermediate CA configuration file.
-# Copy to `/root/ca/intermediate/openssl.cnf`.
+#
+# OpenSSL configuration for the Intermediate Certification Authority.
+#
 
 [ ca ]
-# `man ca`
 default_ca = CA_default
 
 [ CA_default ]
@@ -272,125 +272,109 @@ dir               = /root/ca/intermediate
 certs             = $dir/certs
 crl_dir           = $dir/crl
 new_certs_dir     = $dir/newcerts
-database          = $dir/index.txt
+database          = $dir/index
 serial            = $dir/serial
 RANDFILE          = $dir/private/.rand
 
 # The root key and root certificate.
-private_key       = $dir/private/intermediate.key.pem
-certificate       = $dir/certs/intermediate.cert.pem
+private_key       = $dir/private/intermediateca.key
+certificate       = $dir/certs/intermediateca.crt
 
 # For certificate revocation lists.
 crlnumber         = $dir/crlnumber
-crl               = $dir/crl/intermediate.crl.pem
+crl               = $dir/crl/intermediateca.crl
 crl_extensions    = crl_ext
 default_crl_days  = 30
 
-# SHA-1 is deprecated, so use SHA-2 instead.
 default_md        = sha256
 
 name_opt          = ca_default
 cert_opt          = ca_default
-default_days      = 375
+
+default_days      = 3650
+default_md        = sha256
+
 preserve          = no
-policy            = policy_loose
+unique_subject    = no
 
+policy            = policy_strict
+
+# For the CA policy
 [ policy_strict ]
-# The root CA should only sign intermediate certificates that match.
-# See the POLICY FORMAT section of `man ca`.
-countryName             = match
-stateOrProvinceName     = match
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
+countryName                = optional
+stateOrProvinceName        = optional
+organizationName           = optional
+organizationalUnitName     = optional
+commonName                 = supplied
+emailAddress               = optional
 
-[ policy_loose ]
-# Allow the intermediate CA to sign a more diverse range of certificates.
-# See the POLICY FORMAT section of the `ca` man page.
-countryName             = optional
-stateOrProvinceName     = optional
-localityName            = optional
-organizationName        = optional
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
+# For the 'anything' policy
+# At this point in time, you must list all acceptable 'object' types.
+[ policy_anything ]
+countryName                = optional
+stateOrProvinceName        = optional
+localityName               = optional
+organizationName           = optional
+organizationalUnitName     = optional
+givenName                  = optional
+commonName                 = supplied
+emailAddress               = optional
+title                      = optional
 
 [ req ]
-# Options for the `req` tool (`man req`).
 default_bits        = 2048
 distinguished_name  = req_distinguished_name
 string_mask         = utf8only
 
-# SHA-1 is deprecated, so use SHA-2 instead.
 default_md          = sha256
+default_keyfile     = private/intermediateca.key
 
-# Extension to add when the -x509 option is used.
-x509_extensions     = v3_ca
+req_extensions      = req_ext
+x509_extensions     = v3_intermediate_ca
 
 [ req_distinguished_name ]
-# See <https://en.wikipedia.org/wiki/Certificate_signing_request>.
 countryName                     = Country Name (2 letter code)
-stateOrProvinceName             = State or Province Name
-localityName                    = Locality Name
-0.organizationName              = Organization Name
-organizationalUnitName          = Organizational Unit Name
-commonName                      = Common Name
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+organizationName                = Organization Name (eg, company)
+organizationalUnitName          = Organizational Unit Name (eg, section)
+commonName                      = Common Name (eg, your name or your server hostname)
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.  
 countryName_default             = RU
 stateOrProvinceName_default     = Moscow
 localityName_default            = Moscow
-0.organizationName_default        = SEA_TEST_ORG
+organizationName_default       = SEA_TEST_ORG
 organizationalUnitName_default  = IT
 emailAddress_default            = admin@sea.local
 
-[ v3_ca ]
-# Extensions for a typical CA (`man x509v3_config`).
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+[ req_ext ]
+basicConstraints         = critical, CA:true
+keyUsage                 = critical, digitalSignature, cRLSign, keyCertSign
 
 [ v3_intermediate_ca ]
-# Extensions for a typical intermediate CA (`man x509v3_config`).
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true, pathlen:0
-keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer
 
-[ usr_cert ]
-# Extensions for client certificates (`man x509v3_config`).
-basicConstraints = CA:FALSE
-nsCertType = client, email
-nsComment = "OpenSSL Generated Client Certificate"
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = clientAuth, emailProtection
-
-[ server_cert ]
-# Extensions for server certificates (`man x509v3_config`).
-basicConstraints = CA:FALSE
-nsCertType = server
-nsComment = "OpenSSL Generated Server Certificate"
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer:always
-keyUsage = critical, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
+# As pathlen restricts creating any further intermidiate CA in the chain.
+basicConstraints         = critical, CA:true, pathlen:0
+keyUsage                 = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints    = crldp1_section
 
 [ crl_ext ]
-# Extension for CRLs (`man x509v3_config`).
-authorityKeyIdentifier=keyid:always
+# CRL extensions.
+authorityKeyIdentifier   = keyid:always
+
+[ crldp1_section ]
+fullname                 = URI:http://ca.sea.local/intermidiateca.crl
 
 [ ocsp ]
-# Extension for OCSP signing certificates (`man ocsp`).
-basicConstraints = CA:FALSE
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-keyUsage = critical, digitalSignature
-extendedKeyUsage = critical, OCSPSigning
+basicConstraints         = CA:FALSE
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid,issuer
+keyUsage                 = critical, digitalSignature
+extendedKeyUsage         = critical, OCSPSigning
 ```
 <br>
 
@@ -398,7 +382,7 @@ extendedKeyUsage = critical, OCSPSigning
 
 ```bash
 cd /root/ca
-openssl genrsa -aes256 -out intermediate/private/intermediate.key.pem 4096
+openssl genrsa -aes256 -out intermediate/private/intermediateca.key 4096
 ```
 <br>
 
@@ -410,7 +394,7 @@ Verifying - Enter pass phrase for ca.key.pem: secretpassword
 <br>
 
 ```bash
-chmod 400 intermediate/private/intermediate.key.pem
+chmod 400 intermediate/private/intermediateca.key
 ```
 <br>
 
@@ -418,7 +402,7 @@ chmod 400 intermediate/private/intermediate.key.pem
 
 ```bash
 cd /root/ca
-openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
+openssl req -config intermediate/openssl-intermediate.cnf -new -sha256 -key intermediate/private/intermediateca.key -out intermediate/csr/intermediateca.csr
 ```
 <br>
 
@@ -429,7 +413,7 @@ Verifying - Enter pass phrase for ca.key.pem: secretpassword
 ```
 <br>
 
-Также, потребуется указать/переопределить умолчания из openssl.cnf:
+Также, потребуется указать/переопределить умолчания из openssl-intermediate.cnf:
 ```
 # Optionally, specify some defaults.  
 countryName_default             = RU
@@ -443,7 +427,7 @@ emailAddress_default            = admin@sea.local
 
 Например:
 ```
-openssl req -config intermediate/openssl.cnf -new -sha256 -key intermediate/private/intermediate.key.pem -out intermediate/csr/intermediate.csr.pem
+openssl req -config intermediate/openssl-intermediate.cnf -new -sha256 -key intermediate/private/intermediateca.key -out intermediate/csr/intermediate.csr
 -----
 Country Name (2 letter code) [XX]: RU
 State or Province Name []: Moscow
@@ -455,11 +439,17 @@ Email Address []: admin@sea.local
 ```
 <br>
 
+Проверка csr запроса:
+```
+openssl req -in intermediate/csr/intermediateca.csr -noout -text -reqopt no_version,no_pubkey,no_sigdump
+```
+<br>
+
 #### Создание сертификата для INTERMEDIATE CA
 
 ```bash
 cd /root/ca
-openssl ca -config openssl.cnf -extensions v3_intermediate_ca -days 3650 -notext -md sha256 -in intermediate/csr/intermediate.csr.pem -out intermediate/certs/intermediate.cert.pem
+openssl ca -config openssl-root.cnf -extensions v3_intermediate_ca -days 3650 -rand_serial -notext -md sha256 -in intermediate/csr/intermediateca.csr -out intermediate/certs/intermediateca.crt
 ```
 <br>
 
@@ -471,31 +461,31 @@ Verifying - Enter pass phrase for ca.key.pem: secretpassword
 <br>
 
 ```bash
-chmod 444 intermediate/certs/intermediate.cert.pem
+chmod 444 intermediate/certs/intermediateca.crt
 ```
 <br>
 
 #### Проверка сертификата для INTERMEDIATE CA
 
 ```bash
-openssl x509 -noout -text -in intermediate/certs/intermediate.cert.pem
+openssl x509 -noout -text -in intermediate/certs/intermediateca.crt
 ```
 <br>
 
 ```bash
-openssl verify -CAfile certs/ca.cert.pem intermediate/certs/intermediate.cert.pem
+openssl verify -CAfile certs/rootca.crt intermediate/certs/intermediateca.crt
 ```
 <br>
 
 #### Создание цепочки корневых сертификатов
 
 ```bash
-cat intermediate/certs/intermediate.cert.pem certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem
+cat iintermediate/certs/intermediateca.crt certs/rootca.crt > intermediate/certs/cachain.crt
 ```
 <br>
 
 ```bash
-chmod 444 intermediate/certs/ca-chain.cert.pem
+chmod 444 intermediate/certs/cachain.crt
 ```
 <br>
 
